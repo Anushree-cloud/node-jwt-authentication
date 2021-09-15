@@ -14,25 +14,44 @@ exports.getAllPosts = (req, res) => {
     })
 }
 
+exports.postUser = (req, res) => {
+    jwt.verify(req.token, process.env.ACCESS_TOKEN_SECRET, (error, user) => {
+        if(error) {
+            res.sendStatus(401)
+        }
+        else {
+            res.json({
+                message: 'Post Added!',
+                user: user
+            })
+        }
+    })
+    
+}
+
 exports.login = (req, res) => {
     let user = {
         userName: req.body.userName,
         password: req.body.password
     }
-    const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET)
-    res.json({ accessToken: accessToken })
+    jwt.sign({ user: user }, process.env.ACCESS_TOKEN_SECRET, (error, token) => {
+        if(error) throw error
+        res.json({
+            token: token
+        })
+    })
 }
 
 exports.authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-    if(token === null) {
-        return res.sendStatus(401)
+    if(typeof authHeader !== 'undefined') {
+        const bearerToken = authHeader.split(' ')[1]
+        req.token = bearerToken
+        next()
+    }
+    else {
+        res.sendStatus(403)
     }
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, user) => {
-        if(error) throw error
-        req.user = user
-        next()
-    })
+    
 }
